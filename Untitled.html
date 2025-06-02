@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Peta Pulau Indonesia (Dark Mode)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #121212; color: #EEE; overflow-x: hidden; }
+    .container { display: flex; flex-direction: column; align-items: center; gap: 2rem; padding: 2rem 1rem; transition: filter .3s ease; }
+    .island { text-align: center; cursor: pointer; width: 80vw; max-width: 400px; transition: transform .2s ease; }
+    .island img { width: 100%; border-radius: .5rem; transition: transform .2s ease; }
+    .island:hover img { transform: scale(1.05); }
+    .island:active img { transform: scale(0.95); }
+    .blur { filter: blur(8px); transition: filter .3s ease; }
+    #popup { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 10; }
+    #popup.open { display: flex; }
+    .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
+    .popup-content { position: relative; background: #1E1E1E; border-radius: .5rem; width: 90%; max-width: 800px; max-height: 90%; display: flex; overflow: hidden; }
+    .popup-content img { width: 40%; max-width: 300px; object-fit: contain; }
+    .info { padding: 1rem; width: 60%; display: flex; flex-direction: column; height: 300px; overflow: hidden; opacity: 0; transition: opacity .3s ease; }
+    .info-page { display: none; height: 100%; overflow-y: auto; }
+    .info-page.active { display: block; }
+    .nav { display: flex; justify-content: space-between; margin-top: 1rem; }
+    .nav button, .close {
+      padding: .5rem 1rem;
+      border: none;
+      background: #BB86FC;
+      color: #121212;
+      border-radius: .25rem;
+      cursor: pointer;
+      transition: background .2s ease, transform .1s ease;
+    }
+    .nav button:hover, .close:hover { background: #d2aaff; }
+    .nav button:active, .close:active { transform: scale(0.95); }
+    .close { position: absolute; top: .5rem; right: .5rem; background: transparent; color: #EEE; font-size: 1.5rem; }
+    .info-list li { display: flex; gap: .75rem; margin-bottom: .75rem; }
+    .info-list img { width: 50px; height: 50px; border-radius: .25rem; object-fit: cover; }
+    .info-list p { margin: 0; font-size: .85rem; line-height: 1.4; }
+    #suku-list li { font-size: .95rem; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: .5rem; }
+    @media (max-width:600px) { .popup-content { flex-direction: column; } .popup-content img, .info { width:100% !important; height: auto; } }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <div class="island" data-island="java"><img src="images/java.png" alt="Pulau Jawa"><h2></h2></div>
+    <div class="island" data-island="sumatra"><img src="images/sumatra.png" alt="Pulau Sumatra"><h2></h2></div>
+    <div class="island" data-island="kalimantan"><img src="images/kalimantan.png" alt="Pulau Kalimantan"><h2></h2></div>
+    <div class="island" data-island="sulawesi"><img src="images/sulawesi.png" alt="Pulau Sulawesi"><h2></h2></div>
+    <div class="island" data-island="papua"><img src="images/papua.png" alt="Pulau Papua"><h2></h2></div>
+  </div>
+<div style="text-align:center; margin: 2rem;">
+    <a href="avatar maker.html">
+      <button style="
+        padding: 1rem 2rem;
+        background: #BB86FC;
+        color: #121212;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+      ">
+        "make your avatar"
+      </button>
+    </a>
+  </div>
+  <div id="popup">
+    <div class="overlay"></div>
+    <div class="popup-content">
+      <button class="close">&times;</button>
+      <img id="popup-image" src="" alt="">
+      <div class="info" id="info">
+        <div id="page0" class="info-page active"><h3>Persentase Suku</h3><ul id="suku-list"></ul></div>
+        <div id="page1" class="info-page"><h3>Tokoh Nasional</h3><ul id="tokoh-list" class="info-list"></ul></div>
+        <div id="page2" class="info-page"><h3>Kekhasan Pulau</h3><ul id="khas-list" class="info-list"></ul></div>
+        <div class="nav"><button id="prev">Prev</button><button id="next">Next</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+      java: {
+        img: 'images/java.png',
+        suku: [
+          { name: 'Jawa', pct: 70 },
+          { name: 'Sunda', pct: 15 },
+          { name: 'Betawi', pct: 5 },
+          { name: 'Madura', pct: 5 },
+          { name: 'Lainnya', pct: 5 }
+        ],
+        tokoh: [
+          { name: 'Soekarno', suku: 'Jawa', desc: 'Presiden pertama Indonesia yang memimpin perjuangan kemerdekaan.' },
+          { name: 'R. A. Kartini', suku: 'Jawa', desc: 'Pejuang emansipasi wanita dan pelopor pendidikan.' },
+          { name: 'Jenderal Sudirman', suku: 'Jawa', desc: 'Panglima besar TNI yang memimpin gerilya.' }
+        ],
+        khas: [
+          { name: 'Candi Borobudur', desc: 'Candi Budha terbesar di dunia yang menjadi warisan budaya UNESCO.' },
+          { name: 'Gunung Bromo', desc: 'Gunung aktif yang jadi ikon wisata Jawa Timur.' },
+          { name: 'Wayang Kulit', desc: 'Seni tradisional dengan bayangan kulit.' },
+          { name: 'Sate Madura', desc: 'Makanan khas berbumbu kacang dengan cita rasa gurih dan manis.' },
+          { name: 'Monas', desc: 'Monumen Nasional sebagai simbol kemerdekaan Indonesia.' }
+        ]
+      },
+      sumatra: {
+        img: 'images/sumatra.png',
+        suku: [
+          { name: 'Melayu', pct: 30 },
+          { name: 'Minangkabau', pct: 20 },
+          { name: 'Batak', pct: 25 },
+          { name: 'Nias', pct: 5 },
+          { name: 'Lainnya', pct: 20 }
+        ],
+        tokoh: [
+          { name: 'Mohammad Hatta', suku: 'Minangkabau', desc: 'Wakil presiden pertama Indonesia dan tokoh proklamator kemerdekaan.' },
+          { name: 'Chairil Anwar', suku: 'Batak', desc: 'Penyair legendaris Angkatan ’45.' },
+          { name: 'Tan Malaka', suku: 'Minangkabau', desc: 'Tokoh revolusioner dan pemikir politik Indonesia awal abad ke-20.' }
+        ],
+        khas: [
+          { name: 'Rumah Gadang', desc: 'Rumah adat Minangkabau dengan atap melengkung khas.' },
+          { name: 'Gunung Kerinci', desc: 'Gunung tertinggi di Sumatra, populer untuk pendakian.' },
+          { name: 'Harimau Sumatra', desc: 'Satwa endemik terancam punah.' },
+          { name: 'Danau Toba', desc: 'Danau vulkanik terbesar di Asia Tenggara.' },
+          { name: 'Rendang', desc: 'Makanan khas Padang yang mendunia.' },
+          { name: 'Jembatan Ampera', desc: 'Ikon Palembang di atas Sungai Musi.' }
+        ]
+      },
+      kalimantan: {
+        img: 'images/kalimantan.png',
+        suku: [
+          { name: 'Dayak', pct: 40 },
+          { name: 'Banjar', pct: 30 },
+          { name: 'Melayu', pct: 20 },
+          { name: 'Lainnya', pct: 10 }
+        ],
+        tokoh: [
+          { name: 'Tjilik Riwut', suku: 'Dayak Ngaju', desc: 'Pahlawan nasional dan gubernur pertama Kalimantan Tengah.' },
+          { name: 'Pangeran Antasari', suku: 'Banjar', desc: 'Pemimpin perjuangan rakyat Banjar melawan Belanda.' },
+          { name: 'Oevaang Oeray', suku: 'Dayak Maanyan', desc: 'Gubernur pertama Kalimantan Barat.' }
+        ],
+        khas: [
+          { name: 'Rumah Adat Dayak', desc: 'Rumah panjang tradisional masyarakat Dayak.' },
+          { name: 'Orangutan', desc: 'Primata endemik hutan Kalimantan.' },
+          { name: 'Buah Tropis', desc: 'Durian, rambutan, langsat yang melimpah.' },
+          { name: 'Pegunungan Kapur', desc: 'Formasi batu kapur indah destinasi ekowisata.' }
+        ]
+      },
+      sulawesi: {
+        img: 'images/sulawesi.png',
+        suku: [
+          { name: 'Bugis', pct: 25 },
+          { name: 'Makassar', pct: 20 },
+          { name: 'Minahasa', pct: 15 },
+          { name: 'Toraja', pct: 10 },
+          { name: 'Lainnya', pct: 30 }
+        ],
+        tokoh: [
+          { name: 'Sam Ratulangi', suku: 'Minahasa', desc: 'Tokoh nasional dan gubernur Sulawesi pertama.' },
+          { name: 'Sultan Hasanuddin', suku: 'Makassar', desc: 'Pahlawan Kerajaan Gowa melawan VOC.' },
+          { name: 'Andi Mappanyukki', suku: 'Bugis', desc: 'Raja Bone yang mendukung kemerdekaan.' }
+        ],
+        khas: [
+          { name: 'Tongkonan', desc: 'Rumah adat Toraja dengan atap melengkung khas.' },
+          { name: 'Gunung Klabat', desc: 'Gunung tertinggi di Sulawesi Utara.' },
+          { name: 'Burung Maleo', desc: 'Burung endemik yang bertelur di pasir panas.' },
+          { name: 'Coto Makassar', desc: 'Sup daging khas Makassar kaya rempah.' }
+        ]
+      },
+      papua: {
+        img: 'images/papua.png',
+        suku: [
+          { name: 'Papuan Asli', pct: 80 },
+          { name: 'Non-Papuan', pct: 20 }
+        ],
+        tokoh: [
+          { name: 'Frans Kaisiepo', suku: 'Biak', desc: 'Pejuang integrasi Papua ke Indonesia.' },
+          { name: 'Theys Hiyo Eluay', suku: 'Mee', desc: 'Aktivis Papua memperjuangkan perdamaian.' },
+          { name: 'Marthen Indey', suku: 'Yapen', desc: 'Tokoh diplomasi dan perjuangan Papua.' }
+        ],
+        khas: [
+          { name: 'Burung Cenderawasih', desc: 'Burung endemik Papua berwarna cerah.' },
+          { name: 'Rumah Honai', desc: 'Rumah adat bundar beratap ilalang.' },
+          { name: 'Topeng Tradisional', desc: 'Topeng ukir kayu Papua adat.' }
+        ]
+      }
+    };
+
+    const container = document.getElementById('container');
+    const popup = document.getElementById('popup');
+    const imgEl = document.getElementById('popup-image');
+    const sukuList = document.getElementById('suku-list');
+    const tokohList = document.getElementById('tokoh-list');
+    const khasList = document.getElementById('khas-list');
+    const pages = document.querySelectorAll('.info-page');
+    const infoDiv = document.getElementById('info');
+    let currentPage = 0;
+
+    function updatePages() {
+      pages.forEach((p, i) => p.classList.remove('active'));
+      setTimeout(() => pages[currentPage].classList.add('active'), 50);
+      document.getElementById('next').textContent = currentPage === pages.length - 1 ? 'Exit' : 'Next';
+    }
+
+    function showPopup(islandName) {
+      const info = data[islandName];
+      if (!info) return;
+      popup.classList.add('open');
+      container.classList.add('blur');
+      infoDiv.style.opacity = 0;
+      imgEl.src = info.img;
+      sukuList.innerHTML = info.suku.map(s => `<li>${s.name}: ${s.pct}%</li>`).join('');
+      tokohList.innerHTML = info.tokoh.map((t,i) =>
+        `<li><img src="images/${islandName}_tokoh_${i+1}.png" alt="${t.name}" /><div><strong>${t.name}</strong><br><p>${t.desc}</p></div></li>`
+      ).join('');
+      khasList.innerHTML = info.khas.map((k,i) =>
+        `<li><img src="images/${islandName}_khas_${i+1}.png" alt="${k.name}" /><div><strong>${k.name}</strong><br><p>${k.desc}</p></div></li>`
+      ).join('');
+      currentPage = 0;
+      setTimeout(() => { updatePages(); infoDiv.style.opacity = 1; }, 300);
+    }
+
+    document.getElementById('prev').onclick = () => {
+      infoDiv.style.opacity = 0;
+      setTimeout(() => { if (currentPage > 0) currentPage--; updatePages(); infoDiv.style.opacity = 1; }, 300);
+    };
+
+    document.getElementById('next').onclick = () => {
+      infoDiv.style.opacity = 0;
+      setTimeout(() => {
+        if (currentPage < pages.length - 1) {
+          currentPage++;
+          updatePages();
+        } else {
+          popup.classList.remove('open');
+          container.classList.remove('blur');
+          currentPage = 0;
+          updatePages();
+        }
+        infoDiv.style.opacity = 1;
+      }, 300);
+    };
+
+    document.querySelector('.close').onclick = document.querySelector('.overlay').onclick = () => {
+      popup.classList.remove('open');
+      container.classList.remove('blur');
+    };
+
+    document.querySelectorAll('.island').forEach(el => el.onclick = () => showPopup(el.dataset.island));
+  </script>
+</body>
+</html>

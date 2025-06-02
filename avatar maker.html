@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avatar Maker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: sans-serif;
+      background: #121212;
+      color: #EEE;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      max-width: 900px;
+      margin: 2rem auto;
+      gap: 2rem;
+      padding: 0 1rem;
+    }
+    .controls {
+      flex: 1 1 300px;
+      background: #1E1E1E;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+    .controls h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #BB86FC;
+      font-size: 1.6rem;
+    }
+    .controls label {
+      display: block;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    .controls select,
+    .controls input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      background: #2C2C2C;
+      border: 1px solid #444;
+      border-radius: 0.5rem;
+      color: #EEE;
+      font-size: 1rem;
+    }
+    .controls button {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.75rem;
+      background: #BB86FC;
+      color: #121212;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover {
+      background: #d2aaff;
+    }
+    .preview {
+      flex: 2 1 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Beri id agar kita bisa ambil ukuran via JS */
+    .avatar-preview {
+      position: relative;
+      width: 450px;
+      height: 800px;
+      overflow: hidden;
+      border: 0;
+    }
+    .avatar-preview img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="controls">
+      <h2>Avatar Maker</h2>
+
+      <label>
+        Pilih Pakaian Adat
+        <select id="clothingSelect">
+          <option value="">— pilih baju adat! —</option>
+          <option value="images/baju1.png">Baju Jawa</option>
+          <option value="images/baju2.png">Baju Dayak</option>
+          <option value="images/baju3.png">Baju Papua</option>
+          <!-- Tambahkan baju_4.png, dst -->
+        </select>
+      </label>
+      <label>
+        Pilih Senjata Tradisional
+        <select id="weaponSelect">
+          <option value="">— pilih senjata! —</option>
+          <option value="images/senjata_1.png">Keris</option>
+          <option value="images/senjata_2.png">Tombak</option>
+          <!-- Tambahkan senjata_3.png, dst -->
+        </select>
+      </label>
+
+      <label>
+        Beri Nama Avatar
+        <input type="text" id="avatarName" placeholder="Masukkan nama..." />
+      </label>
+
+      <button id="downloadBtn">Download Avatar Saya</button>
+    </div>
+
+    <div class="preview">
+      <!-- Kita beri id "avatarContainer" agar bisa diukur di JS -->
+      <div class="avatar-preview" id="avatarContainer">
+        <!-- Layer base selalu muncul jika diinginkan, misalnya:
+             <img id="baseLayer" src="images/base.png" alt=""> 
+             Namun karena file base tidak ada, kita abaikan. -->
+        <img id="clothingLayer" src="" alt="" />
+        <img id="weaponLayer" src="" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const clothingSelect = document.getElementById('clothingSelect');
+    const weaponSelect   = document.getElementById('weaponSelect');
+    const nameInput      = document.getElementById('avatarName');
+    const downloadBtn    = document.getElementById('downloadBtn');
+
+    const clothingLayer = document.getElementById('clothingLayer');
+    const weaponLayer   = document.getElementById('weaponLayer');
+    // Container preview untuk mengambil ukuran
+    const avatarContainer = document.getElementById('avatarContainer');
+
+    // Update preview saat pilihan berubah
+    clothingSelect.addEventListener('change', () => {
+      clothingLayer.src = clothingSelect.value;
+    });
+    weaponSelect.addEventListener('change', () => {
+      weaponLayer.src = weaponSelect.value;
+    });
+
+    // Ketika tombol download ditekan → render ke canvas → unduh
+    downloadBtn.addEventListener('click', () => {
+      // 1. Ambil ukuran wrapper ".avatar-preview"
+      const width = avatarContainer.offsetWidth;
+      const height = avatarContainer.offsetHeight;
+
+      // 2. Buat canvas sesuai ukuran preview
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      // 3. Siapkan lapisan yang ingin digabungkan
+      //    (Hanya clothingLayer & weaponLayer, karena baseLayer tidak ada)
+      const layers = [ clothingLayer, weaponLayer ];
+
+      let drawn = 0;
+      layers.forEach(layer => {
+        const src = layer.getAttribute('src');
+        // Jika src kosong, langsung hitung "checkDone" tanpa gambar
+        if (!src) {
+          drawn++;
+          checkDone();
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          // Gambar di koordinat (0,0) sesuai lebar & tinggi preview
+          ctx.drawImage(img, 0, 0, width, height);
+          drawn++;
+          checkDone();
+        };
+        img.onerror = () => {
+          // Jika gagal load, tetap lanjutkan
+          drawn++;
+          checkDone();
+        };
+        img.src = src;
+      });
+
+      function checkDone() {
+        if (drawn === layers.length) {
+          // 4. Setelah semua lapisan selesai di-draw, buat data URL
+          const fileNameRaw = nameInput.value.trim();
+          const fileName = (fileNameRaw === '' ? 'avatar' : fileNameRaw) + '.png';
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = canvas.toDataURL('image/png');
+          // 5. Triger klik pada <a> untuk memulai unduhan
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
